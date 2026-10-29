@@ -1,0 +1,36 @@
+name: Build und Release
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Zip entpacken
+        run: unzip -o GravePlugin.zip -d plugin-src
+
+      - name: JDK 21 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Plugin bauen
+        run: mvn -B package --file plugin-src/pom.xml
+
+      - name: Release erstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_number }}" \
+            plugin-src/target/graveplugin.jar \
+            --title "GravePlugin Build ${{ github.run_number }}" \
+            --notes "Automatisch gebaut"
